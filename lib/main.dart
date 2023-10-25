@@ -25,9 +25,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
 
-
-  final String title;
-
   @override
   Widget build(BuildContext context){
     return Scaffold(
@@ -36,7 +33,7 @@ class MyHomePage extends StatelessWidget {
           Text("Idea aleatoria"),
           Text("Aqui va la idea"),
         ],
-      )
+      ),
     );
   }
 }
