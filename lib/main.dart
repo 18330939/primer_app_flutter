@@ -48,9 +48,15 @@ class MyAppState extends ChangeNotifier {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  var selectedIndex = 0;
   @override
   Widget build(BuildContext context){
     
@@ -69,9 +75,11 @@ class MyHomePage extends StatelessWidget {
                   icon: Icon(Icons.favorite), 
                   label: Text("Favoritos")),
               ],
-              selectedIndex: 0,
+              selectedIndex: selectedIndex,
               onDestinationSelected: (value){
-                print("Seleccion: $value");
+                setState(() {
+                  selectedIndex = value;
+                });
               },
             )
           ),
