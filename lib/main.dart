@@ -31,19 +31,34 @@ class MyApp extends StatelessWidget {
 
 class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
-
   var favoritos = <WordPair>[];
+  var historial = <WordPair>[];
+
+  GlobalKey? historialListKey;
 
   void getSiguiente(){
+    historial.insert(0, current);
+    var animatedList = historialListKey?.currentState as AnimatedListState?;
+    animatedList?.insertItem(0);
     current = WordPair.random();
     notifyListeners();
   }
-
+/*
   void toggleFavorito() {
     if (favoritos.contains(current)){
       favoritos.remove(current);
     }else{
       favoritos.add(current);
+    }
+    notifyListeners();
+  }
+*/
+  void toggleFavorito({WordPair? idea}) {
+    idea = idea?? current;
+    if (favoritos.contains(idea)){
+      favoritos.remove(idea);
+    }else{
+      favoritos.add(idea);
     }
     notifyListeners();
   }
@@ -146,6 +161,10 @@ class GeneratorPage extends StatelessWidget{
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Expanded(
+              flex: 3,
+              child: HistorialListView()),
+              SizedBox(height: 20,),
             Text("Idea aleatoria"),
             SizedBox(height: 20,),
             BigCard(idea: appState.current),
@@ -165,6 +184,7 @@ class GeneratorPage extends StatelessWidget{
                 child: Text("Siguiente")),
               ],
             ),
+            Spacer(flex: 2,),
           ],
         ),
       );
@@ -192,10 +212,60 @@ class FavoritosPage extends StatelessWidget{
           title: Text(idea.asLowerCase),
         ),
       ],
-      
-      );
-      
-        
+    );
+  }
+}
 
+class HistorialListView extends StatefulWidget {
+  const HistorialListView({Key? key}) : super(key: key);
+
+  @override
+  State<HistorialListView> createState() => _HistorialListViewState();
+}
+
+class _HistorialListViewState extends State<HistorialListView> {
+  final _key = GlobalKey();
+
+  static const Gradient _maskingGradient = LinearGradient(
+    colors: [Colors.transparent, Colors.black],
+    stops: [0.0, 0.5],
+    begin: Alignment.center,
+    end: Alignment.bottomCenter,
+  );
+  
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<MyAppState>();
+    appState.historialListKey = _key;
+    return ShaderMask(
+      shaderCallback: (bounds) => _maskingGradient.createShader(bounds),
+      blendMode: BlendMode.dstIn,
+      child: AnimatedList(
+        key: _key,
+        reverse: true,
+        padding: EdgeInsets.only(top: 100),
+        initialItemCount: appState.historial.length,
+        itemBuilder: (context, index, animation){
+          final idea = appState.historial[index];
+          return SizeTransition(
+            sizeFactor: animation,
+            child: Center(
+              child: TextButton.icon(
+                onPressed: (){
+                  appState.toggleFavorito(idea: idea);
+                }, 
+                icon: appState.favoritos.contains(idea)
+                      ? Icon(Icons.favorite, size: 12, )
+                      : SizedBox(), 
+                label: Text(
+                  idea.asLowerCase,
+                  semanticsLabel: idea.asPascalCase,
+                )
+              )
+            ), 
+          );
+        }
+      ),
+    );
   }
 }
