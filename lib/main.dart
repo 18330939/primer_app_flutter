@@ -33,16 +33,44 @@ class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
   var favoritos = <WordPair>[];
   var historial = <WordPair>[];
+  var index = -1;
 
   GlobalKey? historialListKey;
 
   void getSiguiente(){
-    historial.insert(0, current);
-    var animatedList = historialListKey?.currentState as AnimatedListState?;
-    animatedList?.insertItem(0);
-    current = WordPair.random();
+    if (index > 0){
+      --index;
+      current = historial.elementAt(index);
+    }else{
+      if(!historial.contains(current)){
+        historial.insert(0, current);
+        var animatedList = historialListKey?.currentState as AnimatedListState?;
+        animatedList?.insertItem(0);
+        
+      }
+      current = WordPair.random();
+      index = -1;
+    }
     notifyListeners();
   }
+  void getAnterior() {
+    if (index < historial.length-1) {
+      if (index == -1) {
+        historial.insert(0, current);
+        var animatedList = historialListKey?.currentState as AnimatedListState?;
+        animatedList?.insertItem(0);
+        ++index;
+      }
+      ++index;
+      current = historial.elementAt(index);
+    }
+    notifyListeners();
+  }
+
+  void removeFavorito([WordPair? idea]){
+      favoritos.remove(idea);
+      notifyListeners();
+    }
 /*
   void toggleFavorito() {
     if (favoritos.contains(current)){
@@ -74,48 +102,83 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var selectedIndex = 0;
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     Widget page;
     switch (selectedIndex) {
-      case 0: page = GeneratorPage(); break;
-      case 1: page = FavoritosPage(); break; 
+      case 0:
+        page = GeneratorPage();
+        break;
+      case 1:
+        page = FavoritosPage();
+        break;
       default:
         throw UnimplementedError('No hay un widget para: $selectedIndex');
-    }  
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Scaffold(
-          body: Row(
-            children: [
-              SafeArea(
-                child: NavigationRail(
-                  extended: constraints.maxWidth >= 600,
-                  destinations: [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.home), 
-                      label: Text("Inicio")),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.favorite), 
-                      label: Text("Favoritos")),
-                  ],
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (value){
-                    setState(() {
-                      selectedIndex = value;
-                    });
-                  },
-                )
+    }
+    return Scaffold(body: LayoutBuilder(builder: (context, constraints) {
+      if (constraints.maxWidth >= 450) {
+        return Row(
+          children: [
+            SafeArea(
+              child: NavigationRail(
+                extended: constraints.maxWidth >= 600,
+                destinations: [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.home),
+                    label: Text('Home'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.favorite),
+                    label: Text('Favoritos'),
+                  ),
+                ],
+                selectedIndex: selectedIndex,
+                onDestinationSelected: (value) {
+                  setState(() {
+                    selectedIndex = value;
+                  });
+                },
               ),
-              Expanded(
-                child: Container(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  child: page,)),
-            ],)
+            ),
+            Expanded(
+              child: Container(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: page,
+              ),
+            ),
+          ],
+        );
+      } else {
+        return Column(
+          children: [
+            Expanded(
+              child: Container(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: page,
+              ),
+            ),
+            SafeArea(
+              child: BottomNavigationBar(
+                items: [
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.home), label: 'Home'),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.favorite), label: 'Favoritos'),
+                ],
+                currentIndex: selectedIndex,
+                onTap: (value) {
+                  setState(() {
+                    selectedIndex = value;
+                  });
+                },
+              ),
+            ),
+          ],
         );
       }
-    );
+    }));
   }
 }
+
 
 class BigCard extends StatelessWidget {
   final WordPair idea;
@@ -179,6 +242,12 @@ class GeneratorPage extends StatelessWidget{
                 SizedBox(width: 10,),
                 ElevatedButton(
                   onPressed: (){
+                    appState.getAnterior();
+                  }, 
+                child: Text("Anterior")),
+                SizedBox(width: 10,),
+                ElevatedButton(
+                  onPressed: (){
                     appState.getSiguiente();
                   }, 
                 child: Text("Siguiente")),
@@ -202,15 +271,36 @@ class FavoritosPage extends StatelessWidget{
     }
 
     
-    return ListView(
+
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(padding: const EdgeInsets.all(20),
-        child: Text("Se han elegido ${appState.favoritos.length} favoritos"),),
-        for (var idea in appState.favoritos)
-        ListTile(
-          leading: Icon(Icons.favorite),
-          title: Text(idea.asLowerCase),
+        child: Text("Se han elegido ${appState.favoritos.length} favoritos"),
         ),
+        Expanded(
+          child: GridView(
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 400,
+            childAspectRatio: 400/80,
+          ),
+          children: [
+            for (var idea in appState.favoritos)
+          ListTile(
+            leading: IconButton(
+              icon: Icon(Icons.delete_outline, semanticLabel: 'Eliminar'),
+              color: Theme.of(context).colorScheme.primary,
+              onPressed: (){
+                appState.removeFavorito(idea);
+              },
+          ),
+          title: Text(idea.asLowerCase),
+          ),
+        ],
+      ),
+        ),
+
       ],
     );
   }
